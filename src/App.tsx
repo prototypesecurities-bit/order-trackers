@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard';
 import ShipmentForm from './components/ShipmentForm';
 import TrackingPage from './components/TrackingPage';
 import ShipmentList from './components/ShipmentList';
+import AdminShipmentManagement from './components/AdminShipmentManagement';
 
 interface User {
   id: number;
@@ -100,7 +101,7 @@ function App() {
                 }`}
               >
                 <Package className="w-4 h-4" />
-                Shipments
+                Admin Shipments
               </button>
               <button
                 onClick={() => setCurrentPage('new-shipment')}
@@ -141,7 +142,7 @@ function App() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {currentPage === 'dashboard' && <Dashboard onNavigate={setCurrentPage} />}
-        {currentPage === 'shipments' && <ShipmentList />}
+        {currentPage === 'shipments' && <AdminShipmentManagement />}
         {currentPage === 'new-shipment' && <ShipmentForm />}
       </main>
     </div>
