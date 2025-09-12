@@ -1,28 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, Package, Edit, Eye, Download, XCircle } from 'lucide-react';
+import { Shipment } from '../types/shipment';
 import PDFGenerator from './PDFGenerator';
-
-interface Shipment {
-  id: string;
-  trackingNumber: string;
-  senderName: string;
-  receiverName: string;
-  status: string;
-  createdAt: string;
-  packageType: string;
-  serviceType: string;
-  senderPhone: string;
-  senderEmail: string;
-  senderAddress: string;
-  receiverPhone: string;
-  receiverEmail: string;
-  receiverAddress: string;
-  weight: string;
-  dimensions: string;
-  value: string;
-  specialInstructions: string;
-  updatedAt: string;
-}
 
 const ShipmentList: React.FC = () => {
   const [shipments, setShipments] = useState<Shipment[]>([]);
@@ -43,24 +22,48 @@ const ShipmentList: React.FC = () => {
       const mockShipments: Shipment[] = [
         {
           id: '1',
-          trackingNumber: 'XC12345678ABCD',
-          senderName: 'John Smith',
+          trackingNumber: '1ZG010566711225706',
+          consignmentNo: '10150159',
+          companyName: 'Tech Solutions Inc.',
+          shipperName: 'UMBREEN ZEESHAN',
+          shipperEmail: 'umbreen@techsolutions.com',
+          shipperAddress: '123 Business District',
+          shipperCity: 'Karachi',
+          shipperCountry: 'Pakistan',
+          shipperPostalCode: '75600',
           senderPhone: '+1-555-0101',
           senderEmail: 'john.smith@email.com',
           senderAddress: '123 Oak Street, New York, NY 10001',
           receiverName: 'Jane Doe',
+          receiverEmail: 'jane@receiver.com',
           receiverPhone: '+1-555-0102',
-          receiverEmail: 'jane.doe@email.com',
-          receiverAddress: '456 Pine Avenue, Los Angeles, CA 90210',
-          status: 'In Transit',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          packageType: 'parcel',
-          serviceType: 'express',
-          weight: '2.5',
-          dimensions: '30 x 20 x 15',
-          value: '150.00',
-          specialInstructions: 'Handle with care'
+          receiverAddress: '456 Pine Avenue',
+          receiverCity: 'Los Angeles',
+          receiverCountry: 'United States',
+          receiverComments: '',
+          accountNo: '992',
+          shipperReference: 'AHSAN KHAN',
+          shipmentType: 'Commercial',
+          service: 'Express',
+          pieces: '1',
+          origin: 'Pakistan',
+          totalVolumetricWeight: '2.5',
+          destination: 'United States',
+          weight: '2.0',
+          comments: 'Handle with care',
+          description: 'Electronic components',
+          fragile: true,
+          invoiceType: 'COMMERCIAL INVOICE',
+          invoiceItems: [
+            {
+              description: 'LADIES SUITS',
+              code: '620200000',
+              quantity: 42,
+              price: 150,
+              total: 6300
+            }
+          ],
+          updatedAt: new Date().toISOString()
         },
         {
           id: '2',

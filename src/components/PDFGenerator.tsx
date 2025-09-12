@@ -1,195 +1,329 @@
 import React from 'react';
 import { jsPDF } from 'jspdf';
 import { Download, FileText } from 'lucide-react';
-
-interface Shipment {
-  id: string;
-  trackingNumber: string;
-  senderName: string;
-  senderPhone: string;
-  senderEmail: string;
-  senderAddress: string;
-  receiverName: string;
-  receiverPhone: string;
-  receiverEmail: string;
-  receiverAddress: string;
-  packageType: string;
-  weight: string;
-  dimensions: string;
-  value: string;
-  serviceType: string;
-  specialInstructions: string;
-  status: string;
-  createdAt: string;
-}
+import { Shipment } from '../types/shipment';
 
 interface PDFGeneratorProps {
   shipment: Shipment;
 }
 
 const PDFGenerator: React.FC<PDFGeneratorProps> = ({ shipment }) => {
-  const generatePDF = () => {
+  const generateAWBPDF = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
-    const margin = 20;
-    let yPosition = 30;
+    const pageHeight = doc.internal.pageSize.height;
+    const margin = 15;
 
-    // Header with logo placeholder and company info
-    doc.setFillColor(236, 32, 39); // #ec2027
-    doc.rect(0, 0, pageWidth, 40, 'F');
+    // Draw border around entire document
+    doc.setLineWidth(1);
+    doc.rect(5, 5, pageWidth - 10, pageHeight - 10);
+
+    // Header section with APX logo and AIRWAY BILL
+    let yPos = 25;
     
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(24);
+    // APX Logo section (left side)
+    doc.setFontSize(36);
     doc.setFont('helvetica', 'bold');
-    doc.text('THE XPERT COURIER', margin, 25);
+    doc.setTextColor(0, 100, 200); // Blue for A and P
+    doc.text('A', 15, yPos);
+    doc.text('P', 35, yPos);
+    doc.setTextColor(255, 165, 0); // Orange for X
+    doc.text('X', 55, yPos);
     
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Professional Courier Services', margin, 32);
-
-    // Reset text color
-    doc.setTextColor(0, 0, 0);
-    yPosition = 60;
-
-    // Title
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text('AIRWAY BILL', pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 20;
-
-    // Tracking number
-    doc.setFillColor(240, 240, 240);
-    doc.rect(margin, yPosition - 5, pageWidth - 2 * margin, 15, 'F');
+    // Airplane icon representation
+    doc.setTextColor(150, 150, 150);
+    doc.setFontSize(20);
+    doc.text('✈', 75, yPos - 5);
+    
+    // Tagline
+    doc.setTextColor(0, 100, 200);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'italic');
+    doc.text('Delivering the best', 15, yPos + 10);
+    
+    doc.setTextColor(220, 20, 60); // Red
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Tracking Number: ${shipment.trackingNumber}`, margin + 5, yPosition + 5);
-    yPosition += 25;
+    doc.text('INT. COURIER & CARGO', 15, yPos + 22);
 
-    // Sender and Receiver sections
-    const sectionWidth = (pageWidth - 3 * margin) / 2;
-    
-    // Sender section
-    doc.setFontSize(12);
+    // AIRWAY BILL title (right side)
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(24);
     doc.setFont('helvetica', 'bold');
-    doc.text('SENDER INFORMATION', margin, yPosition);
-    doc.setLineWidth(0.5);
-    doc.line(margin, yPosition + 2, margin + sectionWidth, yPosition + 2);
-    yPosition += 10;
+    doc.text('AIRWAY BILL', pageWidth - 80, yPos);
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    const senderInfo = [
-      `Name: ${shipment.senderName}`,
-      `Phone: ${shipment.senderPhone}`,
-      `Email: ${shipment.senderEmail}`,
-      `Address: ${shipment.senderAddress}`
+    // Barcode representation and consignment number
+    yPos += 15;
+    doc.setFontSize(8);
+    doc.text('||||||||||||||||||||||||||||||||', pageWidth - 80, yPos);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text(shipment.consignmentNo, pageWidth - 80, yPos + 10);
+
+    yPos = 70;
+
+    // Main information table
+    const tableStartY = yPos;
+    const leftColWidth = (pageWidth - 2 * margin) / 2;
+    const rightColWidth = (pageWidth - 2 * margin) / 2;
+    const rowHeight = 12;
+
+    // Table structure matching the screenshot
+    const tableData = [
+      { left: "Shipper's Name", leftValue: shipment.shipperName, right: "Consignee Name", rightValue: shipment.consigneeName },
+      { left: "Address", leftValue: `${shipment.shipperCity},${shipment.shipperCountry}`, right: "", rightValue: shipment.consigneeAddress },
+      { left: "Shipper Email", leftValue: shipment.shipperEmail, right: "", rightValue: `${shipment.consigneeCity}, ${shipment.consigneeCountry}` },
+      { left: "City Nr NTN/CNC", leftValue: shipment.cityNrNtnCnc || shipment.shipperPostalCode, right: "Zip Code", rightValue: shipment.zipCode || "000" },
+      { left: "Shrepers", leftValue: shipment.shrepers || shipment.shipperPostalCode, right: "City", rightValue: shipment.consigneeCity },
+      { left: "Product Det", leftValue: shipment.productDet || shipment.shipperReference, right: "", rightValue: "" }
     ];
 
-    senderInfo.forEach(info => {
-      doc.text(info, margin, yPosition);
-      yPosition += 6;
-    });
-
-    // Receiver section
-    let receiverY = 105;
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('RECEIVER INFORMATION', margin + sectionWidth + margin, receiverY);
-    doc.line(margin + sectionWidth + margin, receiverY + 2, pageWidth - margin, receiverY + 2);
-    receiverY += 10;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    const receiverInfo = [
-      `Name: ${shipment.receiverName}`,
-      `Phone: ${shipment.receiverPhone}`,
-      `Email: ${shipment.receiverEmail}`,
-      `Address: ${shipment.receiverAddress}`
-    ];
-
-    receiverInfo.forEach(info => {
-      doc.text(info, margin + sectionWidth + margin, receiverY);
-      receiverY += 6;
-    });
-
-    yPosition = Math.max(yPosition, receiverY) + 10;
-
-    // Package details
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('PACKAGE DETAILS', margin, yPosition);
-    doc.line(margin, yPosition + 2, pageWidth - margin, yPosition + 2);
-    yPosition += 10;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-    const packageInfo = [
-      `Package Type: ${shipment.packageType}`,
-      `Weight: ${shipment.weight} kg`,
-      `Dimensions: ${shipment.dimensions} cm`,
-      `Declared Value: $${shipment.value}`,
-      `Service Type: ${shipment.serviceType.replace('-', ' ').toUpperCase()}`,
-      `Status: ${shipment.status}`,
-      `Created: ${new Date(shipment.createdAt).toLocaleString()}`
-    ];
-
-    packageInfo.forEach(info => {
-      doc.text(info, margin, yPosition);
-      yPosition += 6;
-    });
-
-    if (shipment.specialInstructions) {
-      yPosition += 5;
+    // Draw table rows
+    tableData.forEach((row, index) => {
+      const currentY = tableStartY + (index * rowHeight);
+      
+      // Draw horizontal lines
+      doc.setLineWidth(0.5);
+      doc.line(margin, currentY, pageWidth - margin, currentY);
+      
+      // Draw vertical line in middle
+      doc.line(margin + leftColWidth, currentY, margin + leftColWidth, currentY + rowHeight);
+      
+      // Left column
+      doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.text('Special Instructions:', margin, yPosition);
-      yPosition += 6;
+      doc.text(row.left, margin + 2, currentY + 8);
       doc.setFont('helvetica', 'normal');
-      const instructions = doc.splitTextToSize(shipment.specialInstructions, pageWidth - 2 * margin);
-      doc.text(instructions, margin, yPosition);
-      yPosition += instructions.length * 6;
-    }
+      doc.text(row.leftValue, margin + 50, currentY + 8);
+      
+      // Right column
+      if (row.right) {
+        doc.setFont('helvetica', 'bold');
+        doc.text(row.right, margin + leftColWidth + 2, currentY + 8);
+      }
+      if (row.rightValue) {
+        doc.setFont('helvetica', 'normal');
+        doc.text(row.rightValue, margin + leftColWidth + 50, currentY + 8);
+      }
+    });
 
-    // Footer
-    yPosition = doc.internal.pageSize.height - 40;
-    doc.setFillColor(236, 32, 39);
-    doc.rect(0, yPosition, pageWidth, 40, 'F');
+    // Bottom line of main table
+    const tableEndY = tableStartY + (tableData.length * rowHeight);
+    doc.line(margin, tableEndY, pageWidth - margin, tableEndY);
+
+    // Package details section
+    yPos = tableEndY + 10;
     
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(10);
+    // Package details table
+    const packageTableY = yPos;
+    const colWidths = [25, 25, 35, 25, 25, 35, 20];
+    let xPos = margin;
+
+    // Headers
+    const headers = ['Pieces', 'Weight', 'Volumetric', 'Dimension', 'Service', 'Fragile', 'Declared Value'];
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    
+    headers.forEach((header, i) => {
+      doc.rect(xPos, packageTableY, colWidths[i], 10);
+      doc.text(header, xPos + 2, packageTableY + 7);
+      xPos += colWidths[i];
+    });
+
+    // Values row
+    xPos = margin;
+    const values = [
+      shipment.pieces,
+      `${shipment.weight} KG`,
+      `${shipment.volumetric || shipment.totalVolumetricWeight} KG`,
+      shipment.dimension || '',
+      shipment.service,
+      shipment.fragile ? 'Yes' : 'No',
+      shipment.declaredValue || '0.00'
+    ];
+
     doc.setFont('helvetica', 'normal');
-    doc.text('Contact: info@thexpertcourier.com | Track online at thexpertcourier.com', 
-             pageWidth / 2, yPosition + 15, { align: 'center' });
-    doc.text('Thank you for choosing The Xpert Courier!', 
-             pageWidth / 2, yPosition + 25, { align: 'center' });
+    values.forEach((value, i) => {
+      doc.rect(xPos, packageTableY + 10, colWidths[i], 10);
+      doc.text(value, xPos + 2, packageTableY + 17);
+      xPos += colWidths[i];
+    });
+
+    // Description section
+    yPos = packageTableY + 25;
+    doc.rect(margin, yPos, pageWidth - 2 * margin, 15);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text(shipment.description || 'GENTS SHIRTS,LADIES BAGS AND ARTIFICIAL CHAIN', margin + 2, yPos + 8);
+    doc.text('CHAIN', margin + 2, yPos + 12);
+
+    // QR Code section (right side)
+    const qrX = pageWidth - 60;
+    const qrY = packageTableY + 10;
+    doc.rect(qrX, qrY, 25, 25);
+    
+    // QR code pattern (simplified representation)
+    doc.setFillColor(0, 0, 0);
+    for (let i = 0; i < 5; i++) {
+      for (let j = 0; j < 5; j++) {
+        if ((i + j) % 2 === 0) {
+          doc.rect(qrX + 2 + (i * 4), qrY + 2 + (j * 4), 3, 3, 'F');
+        }
+      }
+    }
+    
+    doc.setFontSize(8);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Scan to Track', qrX, qrY + 30);
+
+    // Note section
+    yPos += 20;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('NOTE: PLEASE DO NOT ACCEPT, IF THE SHIPMENT IS NOT INTACT.', margin, yPos + 15);
 
     // Save the PDF
-    doc.save(`airway-bill-${shipment.trackingNumber}.pdf`);
+    doc.save(`awb-${shipment.consignmentNo}.pdf`);
   };
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <FileText className="w-8 h-8 text-red-600" />
+          <FileText className="w-8 h-8 text-blue-600" />
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Airway Bill</h2>
-            <p className="text-gray-600">Download the official shipping document</p>
+            <h2 className="text-xl font-bold text-gray-900">Airway Bill (AWB)</h2>
+            <p className="text-gray-600">Official shipping document</p>
           </div>
         </div>
         <button
-          onClick={generatePDF}
+          onClick={generateAWBPDF}
           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 font-semibold"
         >
           <Download className="w-5 h-5" />
-          Download PDF
+          Download AWB
         </button>
       </div>
       
-      <div className="border-t pt-4">
+      {/* AWB Preview */}
+      <div className="border border-gray-300 rounded-lg p-6 bg-gray-50">
+        <div className="flex justify-between items-start mb-6">
+          {/* APX Logo Section */}
+          <div className="flex items-center gap-2">
+            <div className="text-4xl font-bold">
+              <span className="text-blue-600">A</span>
+              <span className="text-blue-600">P</span>
+              <span className="text-orange-500">X</span>
+              <span className="text-gray-400 ml-2">✈</span>
+            </div>
+            <div className="ml-2">
+              <div className="text-blue-600 italic text-sm">Delivering the best</div>
+              <div className="text-red-600 font-bold text-sm">INT. COURIER & CARGO</div>
+            </div>
+          </div>
+          
+          {/* Airway Bill Title and Barcode */}
+          <div className="text-right">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">AIRWAY BILL</h1>
+            <div className="font-mono text-lg">||||||||||||||||||||||||||||||||</div>
+            <div className="font-bold text-xl">{shipment.consignmentNo}</div>
+          </div>
+        </div>
+
+        {/* Main Information Table */}
+        <div className="border border-gray-400 mb-4">
+          <table className="w-full">
+            <tbody>
+              <tr>
+                <td className="border-r border-gray-400 p-2 font-bold bg-gray-100 w-1/4">Shipper's Name</td>
+                <td className="border-r border-gray-400 p-2 w-1/4">{shipment.shipperName}</td>
+                <td className="border-r border-gray-400 p-2 font-bold bg-gray-100 w-1/4">Consignee Name</td>
+                <td className="p-2 w-1/4">{shipment.consigneeName}</td>
+              </tr>
+              <tr className="border-t border-gray-400">
+                <td className="border-r border-gray-400 p-2 font-bold bg-gray-100">Address</td>
+                <td className="border-r border-gray-400 p-2">{shipment.shipperCity},{shipment.shipperCountry}</td>
+                <td className="border-r border-gray-400 p-2 bg-gray-100"></td>
+                <td className="p-2">{shipment.consigneeAddress}</td>
+              </tr>
+              <tr className="border-t border-gray-400">
+                <td className="border-r border-gray-400 p-2 font-bold bg-gray-100">Shipper Email</td>
+                <td className="border-r border-gray-400 p-2">{shipment.shipperEmail}</td>
+                <td className="border-r border-gray-400 p-2 bg-gray-100"></td>
+                <td className="p-2">{shipment.consigneeCity}, {shipment.consigneeCountry}</td>
+              </tr>
+              <tr className="border-t border-gray-400">
+                <td className="border-r border-gray-400 p-2 font-bold bg-gray-100">City Nr NTN/CNC</td>
+                <td className="border-r border-gray-400 p-2">{shipment.cityNrNtnCnc}</td>
+                <td className="border-r border-gray-400 p-2 font-bold bg-gray-100">Zip Code</td>
+                <td className="p-2">{shipment.zipCode}</td>
+              </tr>
+              <tr className="border-t border-gray-400">
+                <td className="border-r border-gray-400 p-2 font-bold bg-gray-100">Shrepers</td>
+                <td className="border-r border-gray-400 p-2">{shipment.shrepers}</td>
+                <td className="border-r border-gray-400 p-2 font-bold bg-gray-100">City</td>
+                <td className="p-2">{shipment.consigneeCity}</td>
+              </tr>
+              <tr className="border-t border-gray-400">
+                <td className="border-r border-gray-400 p-2 font-bold bg-gray-100">Product Det</td>
+                <td className="border-r border-gray-400 p-2">{shipment.productDet}</td>
+                <td className="border-r border-gray-400 p-2 bg-gray-100"></td>
+                <td className="p-2"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Package Details Table */}
+        <div className="border border-gray-400 mb-4">
+          <table className="w-full">
+            <tbody>
+              <tr>
+                <td className="border-r border-gray-400 p-2 font-bold bg-gray-100 text-center">Pieces</td>
+                <td className="border-r border-gray-400 p-2 font-bold bg-gray-100 text-center">Weight</td>
+                <td className="border-r border-gray-400 p-2 font-bold bg-gray-100 text-center">Volumetric</td>
+                <td className="border-r border-gray-400 p-2 font-bold bg-gray-100 text-center">Dimension</td>
+                <td className="border-r border-gray-400 p-2 font-bold bg-gray-100 text-center">Service</td>
+                <td className="border-r border-gray-400 p-2 font-bold bg-gray-100 text-center">Fragile</td>
+                <td className="p-2 font-bold bg-gray-100 text-center">Declared Value</td>
+              </tr>
+              <tr className="border-t border-gray-400">
+                <td className="border-r border-gray-400 p-2 text-center">{shipment.pieces}</td>
+                <td className="border-r border-gray-400 p-2 text-center">{shipment.weight} KG</td>
+                <td className="border-r border-gray-400 p-2 text-center">{shipment.volumetric || shipment.totalVolumetricWeight} KG</td>
+                <td className="border-r border-gray-400 p-2 text-center">{shipment.dimension}</td>
+                <td className="border-r border-gray-400 p-2 text-center">{shipment.service}</td>
+                <td className="border-r border-gray-400 p-2 text-center">{shipment.fragile ? 'Yes' : 'No'}</td>
+                <td className="p-2 text-center">{shipment.declaredValue}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Description Section */}
+        <div className="border border-gray-400 p-3 mb-4 min-h-[40px]">
+          <div className="text-sm">{shipment.description}</div>
+        </div>
+
+        {/* QR Code and Note Section */}
+        <div className="flex justify-between items-end">
+          <div className="text-sm font-bold">
+            NOTE: PLEASE DO NOT ACCEPT, IF THE SHIPMENT IS NOT INTACT.
+          </div>
+          <div className="text-center">
+            <div className="w-16 h-16 border-2 border-gray-400 flex items-center justify-center mb-1">
+              <div className="text-xs">QR</div>
+            </div>
+            <div className="text-xs">Scan to Track</div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="border-t pt-4 mt-4">
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <span className="text-gray-600">Tracking Number:</span>
-            <span className="font-mono font-bold ml-2">{shipment.trackingNumber}</span>
+            <span className="text-gray-600">Consignment Number:</span>
+            <span className="font-mono font-bold ml-2">{shipment.consignmentNo}</span>
           </div>
           <div>
             <span className="text-gray-600">Status:</span>
